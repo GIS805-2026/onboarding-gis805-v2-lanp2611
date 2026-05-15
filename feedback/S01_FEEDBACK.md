@@ -1,8 +1,10 @@
 # Rétroaction automatisée -- S01 (Diagnostic fondamental -- NexaMart kickoff)
 
-_Générée le 2026-05-14T22:27:44+00:00 -- Run `20260514T221333Z-7d34bf6a`_
+_Générée le 2026-05-15T12:40:52+00:00 -- Run `20260515T122624Z-00a5a04f`_
 
 Ce document est produit par un pipeline reproductible (vérification SQL déterministe + analyse LLM du brief et de la déclaration IA). Une revue humaine précède toujours sa publication. **À ce stade expérimental, aucune note ni étiquette de niveau n'est diffusée : l'objectif est purement formatif.**
+
+> ⚠️ **Avertissement instructeur (à retirer avant publication) :** cette analyse a été générée avec `--skip-pull`. Le contenu correspond au commit local et **n'est peut-être pas la dernière version poussée par l'étudiant·e**.
 
 ---
 
@@ -10,7 +12,7 @@ Ce document est produit par un pipeline reproductible (vérification SQL déterm
 
 La requête extraite de votre brief n'a pas pu être validée automatiquement. Quelques pistes constructives ci-dessous pour vous aider à la rendre exécutable et alignee avec la question posée.
 
-_Observation technique : erreur d'exécution SQL: Invalid Input Error: Cannot execute statement of type "CREATE" on database "cohort_reference" which is attached in read-only mode!_
+_Observation technique : erreur d'exécution SQL: Invalid Input Error: Cannot execute statement of type "CREATE" on database "5e91435" which is attached in read-only mode!_
 
 <details><summary>Requête analysée — cliquez pour déplier</summary>
 
@@ -55,38 +57,37 @@ CREATE TABLE fact_sales (
 
 
 **Pistes :**
-> Votre `db/nexamart.duckdb` est absente ou vide ; la requête a été exécutée contre une **base de référence cohorte** (seed instructeur). Les chiffres retournés ne correspondent donc pas à vos propres données : reconstruisez votre base avec `python src/run_pipeline.py` (ou `.\run.ps1 load`) pour valider vos calculs sur votre seed personnel.
 > Tables disponibles dans `db/nexamart.duckdb` : `raw_bridge_campaign_allocation`, `raw_bridge_customer_segment`, `raw_customer_changes`, `raw_customer_profile_bands`, `raw_customer_scd3_history`, `raw_dim_channel`, `raw_dim_customer`, `raw_dim_date`, `raw_dim_geography`, `raw_dim_product`, `raw_dim_segment_outrigger`, `raw_dim_store`, `raw_fact_budget`, `raw_fact_daily_inventory`, `raw_fact_inventory_snapshot`, `raw_fact_order_pipeline`, `raw_fact_orders_transaction`, `raw_fact_promo_exposure`, `raw_fact_returns`, `raw_fact_sales`.
 
 ## 2. Rétroaction pédagogique sur le brief
 
-> Bon diagnostic technique et schéma en étoile correctement défini; le brief expose la nécessité de modéliser avant d'analyser. Renforcez la traçabilité (commits, note IA) et ajoutez des contrôles de validation reproductibles et des recommandations décisionnelles chiffrées.
+> Le brief présente un schéma en étoile cohérent avec un grain explicite et des DDL plausibles ; la justification métier est claire et la direction recommandée est pertinente. Il manque néanmoins des contrôles de validation automatisés, une trace de développement (commits/IA) et des checks reproductibles pour mettre en production rapidement.
 
 ### Observations par dimension
 
 **Model quality**
-- Observation : Le brief définit un schéma en étoile avec un grain « ligne de commande » (order_number, sale_line_id) et les dimensions date, catégorie, région et produit.
-- Piste d'amélioration : Préciser le choix des patterns (ex. SCD type 2 sur dim_category) et documenter pourquoi certaines mesures sont non-additives (unit_price vs line_total).
+- Observation : « Grain : fact_sales au niveau ligne de commande, identifié par (order_number, sale_line_id). » — le grain est explicite et un schéma en étoile est proposé.
+- Piste d'amélioration : Préciser le pattern SCD choisi (ex. SCD Type 2) et expliciter le traitement des attributs non-additifs (unit_price vs line_total) avec exemples de requêtes.
 
 **Validation quality**
-- Observation : L'auteur fournit des CREATE TABLE DuckDB et deux requêtes COUNT / SUM sur raw_fact_sales pour vérifier la présence et les totaux des données sources.
-- Piste d'amélioration : Ajouter des checks reproductibles (make check) ciblant les cas limites : NULLs, doublons du grain, et vérification que SUM(quantity * unit_price) = total attendu.
+- Observation : L’étudiant fournit des CREATE TABLE et des requêtes DuckDB montrant des contrôles de comptage et d’agrégation sur raw_fact_sales.
+- Piste d'amélioration : Ajouter des contrôles automatisés (make check) couvrant NULLs, doublons du grain, et cas limites (SUM(quantity*unit_price), valeurs manquantes) et montrer les résultats attendus/observés.
 
 **Executive justification**
-- Observation : La réponse exécutive indique clairement que les données actuelles ne permettent pas une réponse précise et recommande de modéliser les données avant d'analyser le déclin par catégorie et région.
-- Piste d'amélioration : Formuler une recommandation opérationnelle chiffrée (p.ex. prioriser SCD sur dim_category et calendrier à livrer en X jours) pour guider la prise de décision du CEO.
+- Observation : La réponse exécutive indique que « les données actuelles ne sont pas structurées pour répondre à cette question stratégique » et recommande la modélisation avant analyse.
+- Piste d'amélioration : Formuler une recommandation concise au CEO avec un impact chiffré attendu (p.ex. délai et métrique de qualité des rapports) pour faciliter la décision.
 
 **Process trace**
-- Observation : Le brief mentionne que les données ont été chargées dans db/nexamart.duckdb via le pipeline, mais ne fournit pas d'historique de commits ni de note IA détaillée.
-- Piste d'amélioration : Inclure un log de commits (≥3 commits avec messages), et une note IA précisant l'outil utilisé et la validation humaine effectuée.
+- Observation : Aucun historique de commits ni note sur l’usage d’IA ou journal de décision n’est fourni dans le brief.
+- Piste d'amélioration : Inclure un petit log de commits (≥3) et une note IA décrivant outils utilisés, prompts et validation humaine.
 
 **Reproducibility**
-- Observation : Le DDL est fourni mais le brief référence un chemin local (`db/nexamart.duckdb`), ce qui indique des chemins codés en dur plutôt qu'un script de reproduction autonome.
-- Piste d'amélioration : Fournir un script d'installation/chargement (« make load ») ou un README décrivant comment cloner, initialiser DuckDB et exécuter les checks sans chemins codés en dur.
+- Observation : Le brief mentionne le fichier db/nexamart.duckdb et des commandes duckdb, mais pas de script reproductible ni README détaillé.
+- Piste d'amélioration : Ajouter un README pas-à-pas et un script check.sh qui, cloné dans le repo, exécute la création/chargement et les vérifications sans ajustements manuels.
 
 ## 3. Déclaration d'utilisation de l'IA
 
-> La déclaration couvre bien les étapes d’utilisation, la validation humaine et les erreurs observées. Toutefois l'outil est nommé sans version/modèle précis, ce qui rend la partie «outils (version/modèle)» trop générique.
+> La déclaration est complète sur les étapes d'utilisation, la validation humaine et les erreurs observées. Toutefois, le renseignement de l'outil reste générique (absence de version/modèle précis), d'où une note réduite.
 
 **Sujets bien couverts dans votre déclaration :**
 
@@ -103,11 +104,11 @@ CREATE TABLE fact_sales (
 
 ## 5. Traçabilité
 
-- **Run ID :** `20260514T221333Z-7d34bf6a`
+- **Run ID :** `20260515T122624Z-00a5a04f`
 - **Devoir :** `S01`
 - **Étudiant·e :** `lanp2611`
-- **Commit analysé :** `fc542e2`
-- **Audit (côté instructeur) :** `tools/instructor/feedback_pipeline/audit/20260514T221333Z-7d34bf6a/lanp2611/`
+- **Commit analysé :** `5e91435`
+- **Audit (côté instructeur) :** `tools/instructor/feedback_pipeline/audit/20260515T122624Z-00a5a04f/lanp2611/`
 - **Prompts (SHA-256) :**
   - `sql_extractor_system` : `90ee9e277de7a27f...`
   - `rubric_grader_system` : `505f32d1d8319d66...`
